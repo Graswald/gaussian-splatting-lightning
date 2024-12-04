@@ -1,19 +1,7 @@
-#
-# Copyright (C) 2023, Inria
-# GRAPHDECO research group, https://team.inria.fr/graphdeco
-# All rights reserved.
-#
-# This software is free for non-commercial, research and evaluation use 
-# under the terms of the LICENSE.md file.
-#
-# For inquiries contact  george.drettakis@inria.fr
-#
-
 from dataclasses import dataclass
 import torch
 import math
 import numpy as np
-from typing import NamedTuple
 from plyfile import PlyData, PlyElement
 
 
@@ -24,18 +12,29 @@ class BasicPointCloud:
     normals: np.array
 
 
+def check_property_exists(plydata, property_name, element_name="vertex"):
+    for element in plydata.elements:
+        if element.name == element_name:
+            for prop in element.properties:
+                if prop.name == property_name:
+                    return True
+    return False
+
+
 def fetch_ply_without_rgb_normalization(path):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']
     positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
     colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T
-    normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+    if not check_property_exists(plydata, "nx"):
+        normals = np.zeros_like(positions)
+    else:
+        normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
 
 def fetch_ply(path):
     pcd = fetch_ply_without_rgb_normalization(path)
-    pcd.colors = pcd.colors / 255.
     return pcd
 
 
