@@ -25,7 +25,7 @@ def generate_appearance_group(workspace: Path) -> None:
 
 def run_train(workspace_dir: Path):
     dry_run = False
-    config_path = "sh_view_dependent.yaml"
+    config_path = "sh_view_dependenden_gsplat_3dgs.yaml"
     iterations = 30000
     training_args = [
         "python", "main.py", "fit",
