@@ -1,8 +1,10 @@
 import os
 import sys
 import math
+from loguru import logger
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.callbacks.progress.tqdm_progress import TQDMProgressBar, Tqdm
+from voluptuous import extra
 
 
 class SaveCheckpoint(Callback):
@@ -58,6 +60,9 @@ class ProgressBar(TQDMProgressBar):
     def __init__(self, refresh_rate: int = 1, process_position: int = 0):
         super().__init__(refresh_rate, process_position + 1)
         self.on_epoch_metrics = {}
+        self.tqdm_disable_status = bool(os.getenv("TQDM_DISABLE", "false"))
+        if self.tqdm_disable_status:
+            self._refresh_rate = 0
 
     def get_metrics(self, trainer, model):
         # only return latest logged metrics
@@ -69,11 +74,11 @@ class ProgressBar(TQDMProgressBar):
         self.max_epochs = trainer.max_epochs
         if self.max_epochs < 0:
             self.max_epochs = math.ceil(trainer.max_steps / self.total_train_batches)
-
+        logger.info("Total epochs: ", extra=self.max_epochs)
         self.epoch_progress_bar = Tqdm(
             desc=self.train_description,
             position=(2 * self.process_position) - 1,
-            disable=self.is_disabled,
+            disable=self.tqdm_disable_status,
             leave=False,
             dynamic_ncols=True,
             file=sys.stdout,
@@ -86,6 +91,9 @@ class ProgressBar(TQDMProgressBar):
         self.on_epoch_metrics.update(self.get_metrics(trainer, pl_module))
         self.epoch_progress_bar.set_postfix(self.on_epoch_metrics)
         self.epoch_progress_bar.update()
+        if self.tqdm_disable_status:
+            logger.info("Epoch completed", extra= trainer.current_epoch)
+
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         super().on_validation_epoch_end(trainer, pl_module)
