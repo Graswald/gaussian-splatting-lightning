@@ -59,6 +59,8 @@ class NGPDataParser(DataParser):
 
         # read frames
         for idx, frame in enumerate(transforms["frames"]):
+            if not os.path.exists(os.path.join(self.path, frame["file_path"])):
+                continue
             if frame["file_path"] in val_set_filename_list:
                 val_set_index_list.append(idx)
             elif frame["file_path"] in test_set_filename_list:
